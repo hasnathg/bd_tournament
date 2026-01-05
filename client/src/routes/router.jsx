@@ -11,6 +11,7 @@ import AdminTournament from '../pages/AdminTournament';
 import PrivateRoute from './PrivateRoute';
 import DashboardGate from '../pages/DashboardGate';
 import AdminDashboard from '../pages/AdminDashboard';
+import AdminFixtures from '../pages/AdminFixtures';
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,8 @@ const router = createBrowserRouter([
           { index: true, element: <AdminDashboard /> }, 
           { path: "pending", element: <AdminPending /> },
           { path: "tournament", element: <AdminTournament /> },
+          { path: "fixtures", element: <AdminFixtures /> },
+
         ],
       },
       

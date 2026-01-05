@@ -6,7 +6,13 @@ const matchSchema = new mongoose.Schema(
 
     groupA: { type: mongoose.Schema.Types.ObjectId, ref: "Group", required: true },
     groupB: { type: mongoose.Schema.Types.ObjectId, ref: "Group", required: true },
-
+     
+    stage: {
+      type: String,
+      enum: ["group", "round2", "quarter", "semi", "final"],
+      default: "group",
+    },
+    
     round: { type: Number, default: 1 },
 
     scheduledAt: { type: Date, default: null },
