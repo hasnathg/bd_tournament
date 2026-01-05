@@ -8,6 +8,7 @@ const healthRoutes = require("./routes/health.routes");
 const authRoutes = require("./routes/auth.routes");
 const playerRoutes = require("./routes/players.routes");
 const tournamentRoutes = require("./routes/tournaments.routes");
+const matchRoutes = require("./routes/matches.routes");
 
 
 
@@ -26,6 +27,7 @@ app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/players", playerRoutes);
 app.use("/api/tournaments", tournamentRoutes);
+app.use("/api/matches", matchRoutes);
 
 
 // Start

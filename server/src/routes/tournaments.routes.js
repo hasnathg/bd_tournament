@@ -1,10 +1,21 @@
 const router = require("express").Router();
 const devAuth = require("../middleware/devAuth");
 const requireRole = require("../middleware/requireRole");
+const Match = require("../models/Match");
+
 
 const Group = require("../models/Group");
 const PlayerProfile = require("../models/PlayerProfile");
 const Tournament = require("../models/Tournament");
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 // POST /api/tournaments (admin)
 router.post("/", devAuth, requireRole(["admin", "superadmin"]), async (req, res) => {
@@ -156,6 +167,102 @@ router.get("/:id/my-group", devAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
+
+// POST /api/tournaments/:id/generate-team-fixtures (admin)
+// Creates random team-vs-team fixtures from existing groups. Clears previous matches.
+router.post(
+  "/:id/generate-team-fixtures",
+  devAuth,
+  requireRole(["admin", "superadmin"]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const tournament = await Tournament.findById(id);
+      if (!tournament) {
+        return res.status(404).json({ ok: false, message: "Tournament not found" });
+      }
+
+      // Pull groups (teams)
+      const groups = await Group.find({ tournamentId: id }).select("_id name players capacity");
+      if (groups.length < 2) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "Need at least 2 groups to generate fixtures." });
+      }
+
+      
+      const eligible = groups.filter((g) => (g.players?.length || 0) > 0);
+
+      if (eligible.length < 2) {
+        return res.status(400).json({
+          ok: false,
+          message: "Not enough eligible groups (teams) with players to generate fixtures.",
+        });
+      }
+
+      // Clear existing matches for this tournament
+      await Match.deleteMany({ tournamentId: id });
+
+      const shuffled = shuffle(eligible);
+      let created = 0;
+      let byeTeam = null;
+
+      // If odd number of teams, one team gets a BYE 
+      if (shuffled.length % 2 === 1) {
+        byeTeam = shuffled.pop();
+      }
+
+      // Pair sequentially: 0v1, 2v3, ...
+      for (let i = 0; i < shuffled.length; i += 2) {
+        const A = shuffled[i];
+        const B = shuffled[i + 1];
+
+        await Match.create({
+          tournamentId: id,
+          groupA: A._id,
+          groupB: B._id,
+          round: 1,
+          scheduledAt: null,
+          status: "pending",
+        });
+
+        created += 1;
+      }
+
+      return res.json({
+        ok: true,
+        message: "Team fixtures generated (Round 1)",
+        stats: {
+          teams: eligible.length,
+          matchesCreated: created,
+          byeTeam: byeTeam ? { id: byeTeam._id, name: byeTeam.name } : null,
+        },
+      });
+    } catch (err) {
+      console.error("generate team fixtures error:", err);
+      return res.status(500).json({ ok: false, message: "Server error" });
+    }
+  }
+);
+
+// GET /api/tournaments/:id/team-fixtures
+router.get("/:id/team-fixtures", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const matches = await Match.find({ tournamentId: id })
+      .populate("groupA", "name players capacity")
+      .populate("groupB", "name players capacity")
+      .sort({ round: 1, createdAt: 1 });
+
+    return res.json({ ok: true, matches });
+  } catch (err) {
+    console.error("list team fixtures error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 
 
 module.exports = router;
