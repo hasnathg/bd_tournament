@@ -8,6 +8,9 @@ import PlayerDashboard from '../pages/PlayerDashboard';
 import AdminPending from '../pages/AdminPending';
 import AdminRoute from './AdminRoute';
 import AdminTournament from '../pages/AdminTournament';
+import PrivateRoute from './PrivateRoute';
+import DashboardGate from '../pages/DashboardGate';
+import AdminDashboard from '../pages/AdminDashboard';
 
 const router = createBrowserRouter([
   {
@@ -17,16 +20,26 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
-      { path: "dashboard", element: <PlayerDashboard /> },
+      {
+        element: <PrivateRoute />,
+       children: [
+          { path: "dashboard", element: <DashboardGate /> }, 
+          { path: "dashboard/player", element: <PlayerDashboard /> }, 
+        ],
+      },
+
+
       
        {
         path: "admin",
         element: <AdminRoute />,
         children: [
+          { index: true, element: <AdminDashboard /> }, 
           { path: "pending", element: <AdminPending /> },
           { path: "tournament", element: <AdminTournament /> },
         ],
       },
+      
     ],
   },
 ]);
